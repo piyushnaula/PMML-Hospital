@@ -84,6 +84,10 @@ $router->put('/api/doctors/(\w+)', function ($id) use ($db) {
     doctorCtrl($db)->update($id);
 });
 
+$router->delete('/api/doctors/(\w+)', function ($id) use ($db) {
+    doctorCtrl($db)->delete($id);
+});
+
 // ── DASHBOARD + ADMIN — 3 endpoints ──────────────────────────────
 $router->get('/api/dashboard', function () use ($db) {
     dashCtrl($db)->index();

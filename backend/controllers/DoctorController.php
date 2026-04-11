@@ -111,8 +111,9 @@ class DoctorController
 
         http_response_code(201);
         echo json_encode([
-            'doctor'  => ['_id' => (string) $doctorId, 'name' => $name, 'specialization' => $specialization],
-            'user_id' => (string) $userId,
+            'doctor'           => ['_id' => (string) $doctorId, 'name' => $name, 'specialization' => $specialization],
+            'user_id'          => (string) $userId,
+            'default_password' => $defaultPassword,
         ]);
     }
 
@@ -263,6 +264,41 @@ class DoctorController
             'certificates'    => $certs,
             'available_slots' => $slots,
         ];
+    }
+
+    // DELETE /doctors/:id
+    // Admin only — removes doctor profile + linked user account + cert files.
+    public function delete(string $id): void
+    {
+        Auth::require(['admin']);
+
+        $doctorId = new MongoDB\BSON\ObjectId($id);
+        $doctor   = $this->doctors->findOne(['_id' => $doctorId]);
+
+        if (!$doctor) {
+            $this->error(404, 'Doctor not found');
+            return;
+        }
+
+        // Delete uploaded certificate files from disk
+        if (!empty($doctor['certificates'])) {
+            foreach ($doctor['certificates'] as $cert) {
+                $file = UPLOAD_PATH . ($cert['filename'] ?? '');
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        }
+
+        // Delete doctor profile
+        $this->doctors->deleteOne(['_id' => $doctorId]);
+
+        // Delete linked user account
+        if (!empty($doctor['user_id'])) {
+            $this->users->deleteOne(['_id' => $doctor['user_id']]);
+        }
+
+        echo json_encode(['message' => 'Doctor and user account removed successfully']);
     }
 
     private function error(int $code, string $msg): void

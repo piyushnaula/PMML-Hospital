@@ -98,7 +98,8 @@ class AdminController
                 'name'  => $name,
                 'email' => $email,
                 'role'  => $role
-            ]
+            ],
+            'default_password' => $defaultPassword,
         ]);
     }
 

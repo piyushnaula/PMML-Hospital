@@ -1,12 +1,13 @@
 import { useState, useEffect, useContext } from "react";
 import { AppContext } from "../context/AppContext";
-import { getAdminUsers, updateAdminUser, addDoctor, addAdminUser } from "../api";
-import { Shield, Stethoscope, Users, UserPlus, Activity, FileText } from "lucide-react";
+import { getAdminUsers, updateAdminUser, addDoctor, addAdminUser, getDoctors, deleteDoctor } from "../api";
+import { Shield, Stethoscope, Users, UserPlus, Activity, FileText, Trash2 } from "lucide-react";
 
 export default function AdminPanel() {
   const { token } = useContext(AppContext);
   const [users, setUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState("manage"); // manage, doctor, staff
+  const [doctors, setDoctors] = useState([]);
+  const [activeTab, setActiveTab] = useState("manage"); // manage, doctors, doctor, staff
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -27,9 +28,31 @@ export default function AdminPanel() {
     }
   };
 
+  const loadDoctors = async () => {
+    try {
+      const res = await getDoctors();
+      setDoctors(res.doctors);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadUsers();
+    loadDoctors();
   }, [token]);
+
+  const handleDeleteDoctor = async (doctorId, doctorName) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${doctorName}? This will remove their profile and user account.`)) return;
+    try {
+      await deleteDoctor(doctorId, token);
+      setMessage({ type: "success", text: `${doctorName} has been removed successfully.` });
+      loadDoctors();
+      loadUsers();
+    } catch (err) {
+      setMessage({ type: "error", text: err.error || "Failed to delete doctor." });
+    }
+  };
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -62,8 +85,12 @@ export default function AdminPanel() {
     if (docForm.certificate) fd.append("certificate", docForm.certificate);
 
     try {
-      await addDoctor(fd, token);
-      setMessage({ type: "success", text: "Doctor added successfully." });
+      const res = await addDoctor(fd, token);
+      setMessage({
+        type: "success",
+        text: "Doctor added successfully!",
+        credentials: { email: docForm.email, password: res.default_password },
+      });
       setDocForm({ name: "", email: "", specialization: "", department: "", certificate: null });
       if (document.getElementById("docFile")) document.getElementById("docFile").value = null;
       loadUsers();
@@ -86,8 +113,12 @@ export default function AdminPanel() {
     if (staffForm.document) fd.append("document", staffForm.document);
 
     try {
-      await addAdminUser(fd, token);
-      setMessage({ type: "success", text: "Staff user created successfully." });
+      const res = await addAdminUser(fd, token);
+      setMessage({
+        type: "success",
+        text: "Staff user created successfully!",
+        credentials: { email: staffForm.email, password: res.default_password },
+      });
       setStaffForm({ name: "", email: "", role: "front_desk", document: null });
       if (document.getElementById("staffFile")) document.getElementById("staffFile").value = null;
       loadUsers();
@@ -104,15 +135,32 @@ export default function AdminPanel() {
         <Shield /> System Administration
       </h1>
 
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
         <TabButton active={activeTab === "manage"} onClick={() => { setActiveTab("manage"); setMessage(null); }} icon={<Users size={18}/>} label="Manage Users" />
-        <TabButton active={activeTab === "doctor"} onClick={() => { setActiveTab("doctor"); setMessage(null); }} icon={<Stethoscope size={18}/>} label="Add Doctor" />
+        <TabButton active={activeTab === "doctors"} onClick={() => { setActiveTab("doctors"); setMessage(null); loadDoctors(); }} icon={<Stethoscope size={18}/>} label="Manage Doctors" />
+        <TabButton active={activeTab === "doctor"} onClick={() => { setActiveTab("doctor"); setMessage(null); }} icon={<UserPlus size={18}/>} label="Add Doctor" />
         <TabButton active={activeTab === "staff"} onClick={() => { setActiveTab("staff"); setMessage(null); }} icon={<UserPlus size={18}/>} label="Add Staff" />
       </div>
 
       {message && (
         <div style={{ padding: "1rem", borderRadius: "8px", marginBottom: "1rem", backgroundColor: message.type === "success" ? "#d1fae5" : "#fee2e2", color: message.type === "success" ? "#065f46" : "#991b1b" }}>
           {message.text}
+          {message.credentials && (
+            <div style={{ marginTop: "1rem", padding: "1rem", background: "#f0fdf4", border: "2px solid #22c55e", borderRadius: "8px", color: "#166534" }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem" }}>🔑 Login Credentials (share with the user)</p>
+              <div style={{ display: "flex", gap: "2rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
+                <div>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Email</span>
+                  <p style={{ margin: 0, fontWeight: 600, fontFamily: "monospace", fontSize: "1.05rem" }}>{message.credentials.email}</p>
+                </div>
+                <div>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Password</span>
+                  <p style={{ margin: 0, fontWeight: 600, fontFamily: "monospace", fontSize: "1.05rem" }}>{message.credentials.password}</p>
+                </div>
+              </div>
+              <p style={{ margin: "0.75rem 0 0", fontSize: "0.8rem", opacity: 0.7 }}>⚠️ This password is shown only once. Please copy it now.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -152,6 +200,57 @@ export default function AdminPanel() {
                         style={{ padding: "4px 8px", borderRadius: "4px", background: u.is_active ? "#d1fae5" : "#fee2e2", color: u.is_active ? "#065f46" : "#991b1b", border: "none" }}
                       >
                         {u.is_active ? "Active" : "Inactive"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+      {activeTab === "doctors" && (
+        <div style={{ background: "#fff", padding: "1.5rem", borderRadius: "12px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>All Doctors</h3>
+          {doctors.length === 0 ? <p style={{ color: "#6b7280" }}>No doctors found.</p> : (
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e5e7eb" }}>
+                  <th style={{ padding: "1rem 0" }}>Name</th>
+                  <th>Specialization</th>
+                  <th>Department</th>
+                  <th>Status</th>
+                  <th>Certificates</th>
+                  <th style={{ textAlign: "center" }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {doctors.map(d => (
+                  <tr key={d._id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "1rem 0", fontWeight: 500 }}>{d.name}</td>
+                    <td>{d.specialization}</td>
+                    <td>{d.department}</td>
+                    <td>
+                      <span style={{
+                        padding: "4px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 600,
+                        background: d.status === "on_duty" ? "#d1fae5" : d.status === "in_consultation" ? "#dbeafe" : "#fee2e2",
+                        color: d.status === "on_duty" ? "#065f46" : d.status === "in_consultation" ? "#1e40af" : "#991b1b",
+                      }}>
+                        {d.status?.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td style={{ color: "#6b7280" }}>{d.certificates?.length || 0} file(s)</td>
+                    <td style={{ textAlign: "center" }}>
+                      <button
+                        onClick={() => handleDeleteDoctor(d._id, d.name)}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: "6px",
+                          padding: "6px 14px", borderRadius: "6px",
+                          background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca",
+                          fontWeight: 600, cursor: "pointer", fontSize: "0.85rem"
+                        }}
+                      >
+                        <Trash2 size={14} /> Remove
                       </button>
                     </td>
                   </tr>

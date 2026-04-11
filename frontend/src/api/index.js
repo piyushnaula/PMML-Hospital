@@ -96,6 +96,12 @@ export const updateDoctor = (id, body, token) =>
     body: JSON.stringify(body),
   }).then(handle);
 
+export const deleteDoctor = (id, token) =>
+  fetch(`${BASE}/doctors/${id}`, {
+    method: "DELETE",
+    headers: headers(token),
+  }).then(handle);
+
 export const uploadDoctorCert = (id, file, token) => {
   const fd = new FormData();
   fd.append("certificate", file);
