@@ -1,0 +1,11 @@
+.env
+vendor/
+uploads/certs/*
+!uploads/certs/.gitkeep
+.git
+.gitignore
+*.md
+seed_admin.php
+seed_dummy_data.php
+test_db.php
+docker-compose.yml

@@ -1,0 +1,39 @@
+# Docker Compose for local development
+# Usage: docker-compose up --build
+
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pmml-hospital-backend
+    ports:
+      - "8000:8000"   # REST API
+      - "8001:8001"   # WebSocket
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=pmml_hospital
+      - JWT_SECRET=your_super_secret_key_here
+      - JWT_EXPIRY=86400
+      - APP_URL=http://localhost:8000
+      - WS_PORT=8001
+      - WS_TCP_PORT=8002
+      - WS_INTERNAL_HOST=127.0.0.1
+      - UPLOAD_PATH=./uploads/certs/
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: pmml-hospital-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

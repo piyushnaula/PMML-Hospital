@@ -1,57 +1,32 @@
-# Render.com Infrastructure-as-Code Blueprint
+# Render.com Infrastructure-as-Code Blueprint (Docker)
 # Deploy with: "New > Blueprint" in Render dashboard, point to this repo.
-# This creates two Web Services that communicate via Render Private Networking.
+# Uses a single Docker Web Service running both API and WS via supervisord.
 
 services:
-  # ── 1. PHP REST API ──────────────────────────────────────────────
   - type: web
-    name: pmml-hospital-api
-    runtime: php
-    buildCommand: |
-      cd backend && composer install --no-dev --optimize-autoloader
-    startCommand: |
-      cd backend && php -S 0.0.0.0:$PORT index.php
+    name: pmml-hospital-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     envVars:
       - key: MONGO_URI
-        sync: false  # Set manually in Render dashboard with your MongoDB Atlas connection string
+        sync: false  # Set manually in Render dashboard with your MongoDB Atlas URI
       - key: MONGO_DB
         value: pmml_hospital
       - key: JWT_SECRET
-        generateValue: true  # Render auto-generates a secure random string
+        generateValue: true
       - key: JWT_EXPIRY
         value: "86400"
       - key: APP_URL
         fromService:
-          name: pmml-hospital-api
+          name: pmml-hospital-backend
           type: web
           property: host
-      - key: WS_INTERNAL_HOST
-        fromService:
-          name: pmml-hospital-ws
-          type: web
-          property: hostport   # Render private network hostname of the WS service
+      - key: WS_PORT
+        value: "8001"
       - key: WS_TCP_PORT
         value: "8002"
+      - key: WS_INTERNAL_HOST
+        value: "127.0.0.1"
       - key: UPLOAD_PATH
         value: ./uploads/certs/
-
-  # ── 2. WebSocket Server ──────────────────────────────────────────
-  - type: web
-    name: pmml-hospital-ws
-    runtime: php
-    buildCommand: |
-      cd backend && composer install --no-dev --optimize-autoloader
-    startCommand: |
-      cd backend && php websocket/Server.php
-    envVars:
-      - key: MONGO_URI
-        sync: false
-      - key: MONGO_DB
-        value: pmml_hospital
-      - key: JWT_SECRET
-        fromService:
-          name: pmml-hospital-api
-          type: web
-          envVarKey: JWT_SECRET
-      - key: WS_TCP_PORT
-        value: "8002"
