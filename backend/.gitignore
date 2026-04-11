@@ -1,0 +1,25 @@
+# Composer dependencies
+/vendor/
+
+# Environment (never commit real secrets)
+.env
+
+# Uploaded files (user content, not part of source)
+/uploads/certs/*
+!/uploads/certs/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+*.log
