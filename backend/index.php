@@ -1,9 +1,21 @@
 <?php
 
-// ── Bootstrap ──────────────────────────────────────────────────────
+// ── 1. CORS Headers — Must be sent before any potential bootstrap errors ──
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// ── 2. Bootstrap ──────────────────────────────────────────────────
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/config/db.php';  // loads .env, $db, constants
 
-// ── Autoload middleware, controllers, services ─────────────────────
+// ── 3. Autoload middleware, controllers, services ─────────────────────
 require_once __DIR__ . '/middleware/Auth.php';
 
 require_once __DIR__ . '/controllers/AuthController.php';
@@ -15,18 +27,6 @@ require_once __DIR__ . '/controllers/AdminController.php';
 
 require_once __DIR__ . '/services/QueueService.php';
 require_once __DIR__ . '/services/DoctorAssign.php';
-
-// ── CORS headers ───────────────────────────────────────────────────
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
 
 // ── Router setup ───────────────────────────────────────────────────
 $router = new Bramus\Router\Router();

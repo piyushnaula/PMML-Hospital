@@ -1,4 +1,5 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE = API_URL.endsWith("/api") ? API_URL : `${API_URL}/api`;
 
 const headers = (token, json = true) => ({
   ...(json && { "Content-Type": "application/json" }),
