@@ -1,4 +1,5 @@
 .env
+.env.*
 vendor/
 uploads/certs/*
 !uploads/certs/.gitkeep
@@ -9,3 +10,6 @@ seed_admin.php
 seed_dummy_data.php
 test_db.php
 docker-compose.yml
+render.yaml
+.vscode/
+.idea/

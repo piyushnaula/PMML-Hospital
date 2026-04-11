@@ -153,8 +153,9 @@ class TcpPushListener
 
 // ── Boot the WS server ──
 $wsApp  = new QueueWsServer();
-$wsPort = (int) (getenv('PORT') ?: ($_ENV['WS_PORT'] ?? 8001));
-$tcpPort = (int) ($_ENV['WS_TCP_PORT'] ?? 8002); 
+// WS runs on its own fixed port (NOT the Render $PORT — that's for the HTTP API).
+$wsPort  = (int) (getenv('WS_PORT')     ?: ($_ENV['WS_PORT']     ?? 8001));
+$tcpPort = (int) (getenv('WS_TCP_PORT') ?: ($_ENV['WS_TCP_PORT'] ?? 8002));
 
 $loop = \React\EventLoop\Loop::get();
 

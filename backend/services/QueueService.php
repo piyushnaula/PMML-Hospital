@@ -146,8 +146,8 @@ class QueueService
     // In production (Render), WS_INTERNAL_HOST points to the WS container's private hostname.
     private static function sendToWsServer(array $payload): void
     {
-        $tcpHost = $_ENV['WS_INTERNAL_HOST'] ?? '127.0.0.1';
-        $tcpPort = (int) ($_ENV['WS_TCP_PORT'] ?? 8002);
+        $tcpHost = getenv('WS_INTERNAL_HOST') ?: ($_ENV['WS_INTERNAL_HOST'] ?? '127.0.0.1');
+        $tcpPort = (int) (getenv('WS_TCP_PORT') ?: ($_ENV['WS_TCP_PORT'] ?? 8002));
         $socket  = @fsockopen($tcpHost, $tcpPort, $errno, $errstr, 1);
 
         if ($socket) {

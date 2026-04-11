@@ -1,27 +1,32 @@
 # Render.com Infrastructure-as-Code Blueprint (Docker)
 # Deploy with: "New > Blueprint" in Render dashboard, point to this repo.
-# Uses a single Docker Web Service running both API and WS via supervisord.
+# Uses a single Docker Web Service running API + internal WS via supervisord.
 
 services:
   - type: web
     name: pmml-hospital-backend
     runtime: docker
+    plan: free
     dockerfilePath: backend/Dockerfile
     dockerContext: backend
+    healthCheckPath: /api/health
     envVars:
+      # ─── REQUIRED: Set these in Render Dashboard ───────────────
       - key: MONGO_URI
-        sync: false  # Set manually in Render dashboard with your MongoDB Atlas URI
+        sync: false  # Set manually with your MongoDB Atlas connection string
       - key: MONGO_DB
         value: pmml_hospital
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRY
         value: "86400"
-      - key: APP_URL
-        fromService:
-          name: pmml-hospital-backend
-          type: web
-          property: host
+
+      # ─── CORS: Your Vercel frontend URL(s), comma-separated ────
+      # Example: https://pmml-hospital.vercel.app,https://your-custom-domain.com
+      - key: ALLOWED_ORIGINS
+        sync: false  # Set manually to your Vercel frontend URL
+
+      # ─── Internal config (usually no changes needed) ───────────
       - key: WS_PORT
         value: "8001"
       - key: WS_TCP_PORT
@@ -29,4 +34,4 @@ services:
       - key: WS_INTERNAL_HOST
         value: "127.0.0.1"
       - key: UPLOAD_PATH
-        value: ./uploads/certs/
+        value: "./uploads/certs/"

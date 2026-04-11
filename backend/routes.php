@@ -13,6 +13,10 @@ function doctorCtrl($db): DoctorController     { return new DoctorController($db
 function dashCtrl($db): DashboardController       { return new DashboardController($db); }
 function adminCtrl($db): AdminController      { return new AdminController($db); }
 
+// ── HEALTH CHECK ──────────────────────────────────────────────────
+$router->get('/api/health', function () {
+    echo json_encode(['status' => 'ok', 'timestamp' => date('c'), 'service' => 'pmml-hospital-backend']);
+});
 
 // ── AUTH — 3 endpoints ────────────────────────────────────────────
 $router->post('/api/auth/register', function () use ($db) {

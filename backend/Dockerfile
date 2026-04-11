@@ -27,6 +27,7 @@ FROM php:8.2-cli
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     supervisor \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install MongoDB extension in production image
@@ -46,8 +47,13 @@ RUN mkdir -p uploads/certs && chmod -R 777 uploads
 # Copy supervisor config
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Expose API port and WS port
-EXPOSE 8000 8001
+# Render injects $PORT at runtime (typically 10000).
+# We only EXPOSE as documentation — Render ignores this directive.
+EXPOSE ${PORT:-8000}
 
-# Use supervisor to run both HTTP API and WebSocket server
+# Health check: verify PHP API responds on $PORT
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/api/health || exit 1
+
+# Use supervisor to run both HTTP API and internal WebSocket server
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
